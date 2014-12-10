@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Terminal=false
+Exec=zdsindicator
+Icon=zdsindicator-icon
+Name=ZdsIndicator
+Comment=RSS feed updates in the indicator area
+Categories=Internet;Network;
