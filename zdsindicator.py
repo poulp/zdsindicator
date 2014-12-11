@@ -3,6 +3,7 @@
 
 import requests
 import os
+import sys
 import webbrowser
 import bs4
 import pynotify
@@ -16,8 +17,8 @@ global client
 app_name = 'ZdsIndicator'
 app_identifier = 'zdsindicator'
 icon_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'icons')
-print icon_path
 update_time = 10000
+activate_notifications = False
 
 
 ##############################
@@ -25,7 +26,12 @@ update_time = 10000
 ##############################
 
 def connect(client):
-    s = client.get(URL+'/membres/connexion/')
+    try:
+         s = client.get(URL+'/membres/connexion/')
+    except requests.exceptions.RequestException as e:
+        print "Probleme connexion"
+        sys.exit(1)
+
     csrftoken = s.cookies['csrftoken']
     
     params = {
@@ -34,10 +40,18 @@ def connect(client):
         'csrfmiddlewaretoken': csrftoken
     }
 
-    s = client.post(URL+'/membres/connexion/', data=params)
+    try:
+        s = client.post(URL+'/membres/connexion/', data=params)
+    except requests.exceptions.RequestException as e:
+        print "Probleme connexion"
+        sys.exit(1)
 
 def get_home_page(client):
-    response = client.get(URL)
+    try:
+        response = client.get(URL)
+    except requests.exceptions.RequestException as e:
+        print "Probleme connexion"
+        sys.exit(1)
     return response.content
     
 def get_mp(html_output):
@@ -85,6 +99,64 @@ class Notification(object):
         self.topic = topic
         self.avatar = avatar
 
+class ConfigureDialog(object):
+    def __init__(self, widget):
+        self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
+        self.window.set_position(gtk.WIN_POS_CENTER)
+        self.window.set_title('Paramètres')
+        self.window.connect('delete_event',self.cancel_dialog)
+        self.window.connect('key-press-event', self.keypress)
+        self.window.set_border_width(10)
+
+        vbox_window = gtk.VBox(True, 2)
+        self.window.add(vbox_window)
+        vbox_window.show()
+
+        vbox_check = gtk.VBox(True, 2)
+        vbox_window.pack_start(vbox_check, True, True, 2)
+        vbox_check.show()
+
+        self.activate_notifications_check = gtk.CheckButton("Activer les notifications")
+        vbox_check.pack_start(self.activate_notifications_check, True, True, 2)
+        self.activate_notifications_check.show()
+
+
+        hbox_button = gtk.HBox(True, 2)
+        hbox_button.show()
+        vbox_window.pack_start(hbox_button, True, True, 2)
+    
+        button_cancel = gtk.Button("Annuler")
+        button_cancel.show()
+        button_cancel.connect('clicked', self.cancel_dialog)
+        hbox_button.pack_start(button_cancel, True, True, 2)
+        
+        button_save = gtk.Button("Sauver")
+        button_save.show()
+        button_save.connect('clicked', self.save, None)
+        hbox_button.pack_start(button_save, True, True, 2)
+
+        self.window.set_keep_above(True)
+        self.window.show()
+
+    def cancel_dialog(self, widget, data=None):
+        self.window.hide()
+
+    def keypress(self, widget, data):
+        if data.keyval == gtk.keysyms.Escape:
+            self.window.hide()
+
+    def save(self, widget, data):
+        global activate_notifications
+
+        if self.activate_notifications_check.get_active():
+            print "true"
+            activate_notifications = True
+        else:
+            print "false"
+            activate_notifications = False
+        print 'save configuration'
+
+
 class ZDSNotification(object):
     def __init__(self):
         self.ind = appindicator.Indicator(app_name,'zdsindicator', appindicator.CATEGORY_APPLICATION_STATUS)
@@ -103,16 +175,25 @@ class ZDSNotification(object):
         self.notif_menu.show()
         self.menu.append(self.notif_menu)
 
-        image = gtk.ImageMenuItem(gtk.STOCK_QUIT)
-        image.connect("activate", self.quit)
-        image.show()
-        self.menu.append(image)
+        separator = gtk.SeparatorMenuItem()
+        separator.show()
+        self.menu.append(separator)
+
+        menu_configure = gtk.MenuItem('Paramètres')
+        menu_configure.show()
+        menu_configure.connect('activate', ConfigureDialog)
+        self.menu.append(menu_configure)
+
+        quit = gtk.ImageMenuItem(gtk.STOCK_QUIT)
+        quit.connect("activate", self.quit)
+        quit.show()
+        self.menu.append(quit)
         
         self.menu.show()
         self.ind.set_menu(self.menu)
         
         pynotify.init('ZDSNotification')
-        gobject.timeout_add(update_time, self.update)
+        self.timeout_id = gobject.timeout_add(update_time, self.update)
 
     def quit(self, widget, data=None):
         gtk.main_quit()
@@ -128,7 +209,6 @@ class ZDSNotification(object):
             image = icon_path+'/zdsindicator-forums.png'
             n = pynotify.Notification('Zeste de Savoir', str(nb_notif)+' notifications', image)
             n.show()
-
 
     def setMP(self, list_mp=[]):
         self.mp_menu.set_label("Message Privés ("+str(len(list_mp))+")")
@@ -177,8 +257,10 @@ class ZDSNotification(object):
         list_notif = get_notifications_forum(html_homepage)
         self.setMP(list_mp)
         self.setNotificationsForums(list_notif)
-        self.send_mp_notification(len(list_mp))
-        self.send_notif_notification(len(list_notif))
+
+        if activate_notifications:
+            self.send_mp_notification(len(list_mp))
+            self.send_notif_notification(len(list_notif))
 
         return True
 
