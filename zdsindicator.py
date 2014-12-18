@@ -366,13 +366,17 @@ class ConfigureDialog(object):
         global activate_notifications
         global refresh_time
 
+        overridetime = False
+
         zdsindicator_gconf['activate_notifications'] = self.activate_notifications_check.get_active()
         activate_notifications = self.activate_notifications_check.get_active()
 
-        zdsindicator_gconf['refresh_time'] = int(self.scaletimer.get_value()*60000)
-        refresh_time = int(self.scaletimer.get_value()*60000)
+        if not refresh_time == int(self.scaletimer.get_value()*60000):
+            zdsindicator_gconf['refresh_time'] = int(self.scaletimer.get_value()*60000)
+            refresh_time = int(self.scaletimer.get_value()*60000)
 
-        z.update(True)
+        self.window.hide()
+        z.update(overridetime)
 
 
 class ZDSNotification(object):
@@ -475,7 +479,6 @@ class ZDSNotification(object):
         webbrowser.open(url)
 
     def update(self, timeoverride=False):
-        print "update"
 
         if timeoverride:
             self.timeout_id = gobject.timeout_add(refresh_time, self.update)
@@ -483,6 +486,15 @@ class ZDSNotification(object):
 
         UpdateThread().start()
         return True
+
+    def set_icon_app(self, mode):
+        # mode possible :
+        # icon
+        # logout
+        # parsing
+
+        self.ind.set_icon("zdsindicator-"+mode)
+
 
 
 class UpdateThread(threading.Thread):
@@ -493,6 +505,8 @@ class UpdateThread(threading.Thread):
         auth('admin', 'admin')
 
     def run(self):
+        gobject.idle_add(z.set_icon_app, "parsing")
+
         self.connect()
         html_output = get_home_page()
 
@@ -504,6 +518,9 @@ class UpdateThread(threading.Thread):
 
         gobject.idle_add(z.set_mp, list_mp)
         gobject.idle_add(z.set_notifications_forums, list_notif)
+
+        gobject.idle_add(z.set_icon_app, "icon")
+
 
         if activate_notifications:
             send_mp_notification(len(list_mp))
