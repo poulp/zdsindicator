@@ -10,6 +10,7 @@ import pynotify
 import appindicator
 import gtk
 import gobject
+import threading
 
 URL = 'http://localhost:8000'
 global client
@@ -17,17 +18,19 @@ global client
 app_name = 'ZdsIndicator'
 app_identifier = 'zdsindicator'
 icon_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'icons')
-update_time = 10000
+update_time = 5000
 activate_notifications = False
 
+gobject.threads_init()
 
 ##############################
 # REQUESTS
 ##############################
 
+
 def connect(client):
     try:
-         s = client.get(URL+'/membres/connexion/')
+        s = client.get(URL+'/membres/connexion/')
     except requests.exceptions.RequestException as e:
         print "Probleme connexion"
         sys.exit(1)
@@ -54,8 +57,8 @@ def get_home_page(client):
         sys.exit(1)
     return response.content
     
-def get_mp(html_output):
-    soup = bs4.BeautifulSoup(html_output)
+def get_mp(soup):
+    #soup = bs4.BeautifulSoup(html_output)
     list_mp = []
 
     for node in soup.findAll(attrs={'class': 'notifs-links'}):
@@ -70,8 +73,8 @@ def get_mp(html_output):
             list_mp.append(tmp)
     return list_mp
 
-def get_notifications_forum(html_output):
-    soup = bs4.BeautifulSoup(html_output)
+def get_notifications_forum(soup):
+    #soup = bs4.BeautifulSoup(html_output)
     list_notif = []
     
     for node in soup.findAll(attrs={'class': 'notifs-links'}):
@@ -99,6 +102,11 @@ class Notification(object):
         self.topic = topic
         self.avatar = avatar
 
+class ConnectDialog(object):
+    def __init__(self, widget):
+        pass
+
+
 class ConfigureDialog(object):
     def __init__(self, widget):
         self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
@@ -116,7 +124,7 @@ class ConfigureDialog(object):
         vbox_window.pack_start(vbox_check, True, True, 2)
         vbox_check.show()
 
-        self.activate_notifications_check = gtk.CheckButton("Activer les notifications")
+        self.activate_notifications_check = gtk.CheckButton("Afficher les notifications")
         vbox_check.pack_start(self.activate_notifications_check, True, True, 2)
         self.activate_notifications_check.show()
 
@@ -251,18 +259,36 @@ class ZDSNotification(object):
         
     def update(self):
         print "update"
+        UpdateThread().start()
+        return True
+
+
+class UpdateThread(threading.Thread):
+    def __init__(self):
+        super(UpdateThread, self).__init__()
+
+    def connect(self):
         connect(client)
-        html_homepage = get_home_page(client)
-        list_mp = get_mp(html_homepage)
-        list_notif = get_notifications_forum(html_homepage)
-        self.setMP(list_mp)
-        self.setNotificationsForums(list_notif)
+
+    def run(self):
+        self.connect()
+        html_output = get_home_page(client)
+        soup = bs4.BeautifulSoup(html_output)
+        list_mp = get_mp(soup)
+        list_notif = get_notifications_forum(soup)
+
+        # détruit le tree pour libérer la mémoire
+        soup.decompose()
+
+        gobject.idle_add(z.setMP, list_mp)
+        gobject.idle_add(z.setNotificationsForums, list_notif)
 
         if activate_notifications:
-            self.send_mp_notification(len(list_mp))
-            self.send_notif_notification(len(list_notif))
+            z.send_mp_notification(len(list_mp))
+            z.send_notif_notification(len(list_notif))
 
-        return True
+        print "end thread"
+
 
 if __name__ == "__main__":
     client = requests.Session()
