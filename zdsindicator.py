@@ -21,7 +21,11 @@ client = requests.Session()
 app_name = 'ZdsIndicator'
 app_identifier = 'zdsindicator'
 icon_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'icons')
-update_time = 5000
+
+stoptimer = False
+
+# temp de rafraichissement par défaut en ms
+refresh_time = 60000
 
 # default activate notifications
 activate_notifications = False
@@ -65,6 +69,9 @@ def get_home_page():
         sys.exit(1)
     return response.content
 
+##############################
+# PARSING
+##############################
 
 def get_mp(soup):
     list_mp = []
@@ -98,6 +105,22 @@ def get_notifications_forum(soup):
                 list_notif.append(tmp)
     return list_notif
 
+##############################
+# NOTIFICATIONS DESKTOP
+##############################
+
+def send_mp_notification(self, nb_mp):
+    if nb_mp > 0:
+        image = icon_path+'/zdsindicator-mp.png'
+        n = pynotify.Notification('Zeste de Savoir', str(nb_mp)+' messages privés non lus', image)
+        n.show()
+
+def send_notif_notification(self, nb_notif):
+    if nb_notif > 0:
+        image = icon_path+'/zdsindicator-forums.png'
+        n = pynotify.Notification('Zeste de Savoir', str(nb_notif)+' notifications', image)
+
+        n.show()
 ##############################
 # GCONF
 ##############################
@@ -255,6 +278,23 @@ class ConfigureDialog(object):
         self.window.add(vbox_window)
         vbox_window.show()
 
+        hbox_refresh_scale = gtk.VBox(False, 0)
+        vbox_window.pack_start(hbox_refresh_scale, False, True, 0)
+        hbox_refresh_scale.show()
+
+        self.label_refresh_scale = gtk.Label("Rafraichir toutes les 10 minutes")
+        hbox_refresh_scale.pack_start(self.label_refresh_scale, False, False, 0)
+        self.label_refresh_scale.show()
+
+        button_refresh_scale = gtk.Adjustment(int(refresh_time/60000), 1.0, 90.0, 1.0, 10.0, 0.0)
+        button_refresh_scale.connect('value_changed', self.set_refresh_scale_label)
+        self.scaletimer = gtk.HScale(button_refresh_scale)
+        self.scaletimer.set_draw_value(False)
+        self.scaletimer.set_digits(0)
+        hbox_refresh_scale.pack_start(self.scaletimer, True, True, 0)
+        self.set_refresh_scale_label(self.scaletimer)
+        self.scaletimer.show()
+
         vbox_check = gtk.VBox(True, 2)
         vbox_window.pack_start(vbox_check, True, True, 2)
         vbox_check.show()
@@ -288,11 +328,27 @@ class ConfigureDialog(object):
         if data.keyval == gtk.keysyms.Escape:
             self.window.hide()
 
+    def set_refresh_scale_label(self, widget):
+        value = widget.get_value();
+        if int(value) == 1:
+            #self.refreshtimeset = int(value)*60
+            self.label_refresh_scale.set_text("Rafraichir toutes les minutes")
+        else:
+            #self.refreshtimeset = int(value)*60
+            self.label_refresh_scale.set_text("Rafraichir toutes les "+str(int(value))+"minutes")
+
+
     def save(self, widget, data):
         global activate_notifications
+        global refresh_time
 
         zdsindicator_gconf['activate_notifications'] = self.activate_notifications_check.get_active()
         activate_notifications = self.activate_notifications_check.get_active()
+
+        zdsindicator_gconf['refresh_time'] = int(self.scaletimer.get_value()*60000)
+        refresh_time = int(self.scaletimer.get_value()*60000)
+
+        z.update(True)
 
         print 'save configuration'
 
@@ -301,6 +357,7 @@ class ZDSNotification(object):
     def __init__(self):
 
         global activate_notifications
+        global refresh_time
 
         self.ind = appindicator.Indicator(app_name, 'zdsindicator', appindicator.CATEGORY_APPLICATION_STATUS)
         self.ind.set_status(appindicator.STATUS_ACTIVE)
@@ -311,6 +368,9 @@ class ZDSNotification(object):
         # initialisation des paramètres
         if zdsindicator_gconf['activate_notifications'] is not None:
             activate_notifications = zdsindicator_gconf['activate_notifications']
+
+        if zdsindicator_gconf['refresh_time'] is not None:
+            refresh_time = zdsindicator_gconf['refresh_time']
 
         self.menu = gtk.Menu()
 
@@ -345,25 +405,13 @@ class ZDSNotification(object):
         self.ind.set_menu(self.menu)
 
         pynotify.init('ZDSNotification')
-        self.timeout_id = gobject.timeout_add(update_time, self.update)
+        self.timeout_id = gobject.timeout_add(refresh_time, self.update)
 
     def quit(self, widget, data=None):
         gtk.main_quit()
 
     def refresh(self, widget):
         self.update()
-
-    def send_mp_notification(self, nb_mp):
-        if nb_mp > 0:
-            image = icon_path+'/zdsindicator-mp.png'
-            n = pynotify.Notification('Zeste de Savoir', str(nb_mp)+' messages privés non lus', image)
-            n.show()
-
-    def send_notif_notification(self, nb_notif):
-        if nb_notif > 0:
-            image = icon_path+'/zdsindicator-forums.png'
-            n = pynotify.Notification('Zeste de Savoir', str(nb_notif)+' notifications', image)
-            n.show()
 
     def set_mp(self, list_mp):
         self.menu_mp.set_label("Message Privés ("+str(len(list_mp))+")")
@@ -404,10 +452,17 @@ class ZDSNotification(object):
     def menuitem_response_website(self, data, url):
         webbrowser.open(url)
 
-    def update(self):
+    def update(self, timeoverride=False):
         print "update"
+
+        if timeoverride:
+            self.timeout_id = gobject.timeout_add(refresh_time, self.update)
+            return False
+
         UpdateThread().start()
         return True
+
+
 
 
 class UpdateThread(threading.Thread):
@@ -432,8 +487,8 @@ class UpdateThread(threading.Thread):
         gobject.idle_add(z.set_notifications_forums, list_notif)
 
         if activate_notifications:
-            z.send_mp_notification(len(list_mp))
-            z.send_notif_notification(len(list_notif))
+            send_mp_notification(len(list_mp))
+            send_notif_notification(len(list_notif))
 
 
 if __name__ == "__main__":
