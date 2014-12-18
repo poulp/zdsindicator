@@ -73,6 +73,7 @@ def get_home_page():
 # PARSING
 ##############################
 
+
 def get_mp(soup):
     list_mp = []
 
@@ -109,18 +110,21 @@ def get_notifications_forum(soup):
 # NOTIFICATIONS DESKTOP
 ##############################
 
-def send_mp_notification(self, nb_mp):
+
+def send_mp_notification(nb_mp):
     if nb_mp > 0:
         image = icon_path+'/zdsindicator-mp.png'
         n = pynotify.Notification('Zeste de Savoir', str(nb_mp)+' messages privés non lus', image)
         n.show()
 
-def send_notif_notification(self, nb_notif):
+
+def send_notif_notification(nb_notif):
     if nb_notif > 0:
         image = icon_path+'/zdsindicator-forums.png'
         n = pynotify.Notification('Zeste de Savoir', str(nb_notif)+' notifications', image)
 
         n.show()
+
 ##############################
 # GCONF
 ##############################
@@ -329,14 +333,11 @@ class ConfigureDialog(object):
             self.window.hide()
 
     def set_refresh_scale_label(self, widget):
-        value = widget.get_value();
+        value = widget.get_value()
         if int(value) == 1:
-            #self.refreshtimeset = int(value)*60
             self.label_refresh_scale.set_text("Rafraichir toutes les minutes")
         else:
-            #self.refreshtimeset = int(value)*60
             self.label_refresh_scale.set_text("Rafraichir toutes les "+str(int(value))+"minutes")
-
 
     def save(self, widget, data):
         global activate_notifications
@@ -463,8 +464,6 @@ class ZDSNotification(object):
         return True
 
 
-
-
 class UpdateThread(threading.Thread):
     def __init__(self):
         super(UpdateThread, self).__init__()
@@ -473,7 +472,7 @@ class UpdateThread(threading.Thread):
         auth()
 
     def run(self):
-        self.connect()
+        #self.connect()
         html_output = get_home_page()
         # TODO dégager bsoup
         soup = bs4.BeautifulSoup(html_output)
