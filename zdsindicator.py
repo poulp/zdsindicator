@@ -5,17 +5,19 @@ import requests
 import os
 import sys
 import webbrowser
-import bs4
 import pynotify
 import appindicator
 import gtk
 import gobject
 import threading
 import gconf
+import gc
+import lxml.html
 from gconf import VALUE_BOOL, VALUE_INT, VALUE_STRING, VALUE_FLOAT
 from types import BooleanType, StringType, IntType, FloatType
 
 URL = 'http://localhost:8000'
+
 client = requests.Session()
 
 app_name = 'ZdsIndicator'
@@ -37,7 +39,9 @@ gobject.threads_init()
 ##############################
 
 
-def auth():
+def auth(username, password):
+
+    is_auth = False
     # première requète pour récuperer le csrftoken
     try:
         s = client.get(URL+'/membres/connexion/')
@@ -48,17 +52,21 @@ def auth():
     csrftoken = s.cookies['csrftoken']
 
     params = {
-        'username': 'admin',
-        'password': 'admin',
+        'username': username,
+        'password': password,
         'csrfmiddlewaretoken': csrftoken
     }
 
     # requète d'authentification
     try:
-        client.post(URL+'/membres/connexion/', data=params)
+        s = client.post(URL+'/membres/connexion/', data=params)
+        if s.url == URL+"/":
+            is_auth = True
     except requests.exceptions.RequestException:
         print "Probleme connexion"
         sys.exit(1)
+
+    return is_auth
 
 
 def get_home_page():
@@ -74,36 +82,51 @@ def get_home_page():
 ##############################
 
 
-def get_mp(soup):
+def is_auth_from_homepage():
+    return False
+
+def get_mp(root):
     list_mp = []
 
-    for node in soup.findAll(attrs={'class': 'notifs-links'}):
-        for li_mp in node.div.div.ul.find_all('li'):
-            tmp = Notification(
-                href=li_mp.a['href'],
-                username=li_mp.a.contents[3].string,
-                date=li_mp.a.contents[5].string,
-                topic=li_mp.a.contents[7].string,
-                avatar=li_mp.a.img['src']
-            )
-            list_mp.append(tmp)
+    result = root.find_class("notifs-links")
+    li_mp = result[0].getchildren()[0].getchildren()[1].getchildren()[1].getchildren()
+    for mp in li_mp:
+
+        if mp.get('class') == 'dropdown-empty-message':
+            return []
+
+        tmp = Notification(
+            href=mp.getchildren()[0].get('href'),
+            username=mp.getchildren()[0].getchildren()[1].text,
+            date=mp.getchildren()[0].getchildren()[2].text,
+            topic=mp.getchildren()[0].getchildren()[3].text,
+            avatar=mp.getchildren()[0].getchildren()[0].get('src')
+        )
+        list_mp.append(tmp)
+
     return list_mp
 
 
-def get_notifications_forum(soup):
+def get_notifications_forum(root):
     list_notif = []
 
-    for node in soup.findAll(attrs={'class': 'notifs-links'}):
-        for li_notif in node.contents[3].div.ul.find_all('li'):
-            if not li_notif.get('class')[0] == 'dropdown-empty-message':
-                tmp = Notification(
-                    href=li_notif.a['href'],
-                    username=li_notif.a.contents[3].string,
-                    date=li_notif.a.contents[5].string,
-                    topic=li_notif.a.contents[7].string,
-                    avatar=li_notif.a.img['src']
-                )
-                list_notif.append(tmp)
+    result = root.find_class("notifs-links")
+    li_notif = result[0].getchildren()[1].getchildren()[1].getchildren()[1]
+
+    for notif in li_notif:
+
+        if notif.get('class') == 'dropdown-empty-message':
+            return []
+
+        tmp = Notification(
+            href=notif.getchildren()[0].get('href'),
+            username=notif.getchildren()[0].getchildren()[1].text,
+            date=notif.getchildren()[0].getchildren()[2].text,
+            topic=notif.getchildren()[0].getchildren()[3].text,
+            avatar=notif.getchildren()[0].getchildren()[0].get('src')
+        )
+        list_notif.append(tmp)
+
     return list_notif
 
 ##############################
@@ -337,7 +360,7 @@ class ConfigureDialog(object):
         if int(value) == 1:
             self.label_refresh_scale.set_text("Rafraichir toutes les minutes")
         else:
-            self.label_refresh_scale.set_text("Rafraichir toutes les "+str(int(value))+"minutes")
+            self.label_refresh_scale.set_text("Rafraichir toutes les "+str(int(value))+" minutes")
 
     def save(self, widget, data):
         global activate_notifications
@@ -350,8 +373,6 @@ class ConfigureDialog(object):
         refresh_time = int(self.scaletimer.get_value()*60000)
 
         z.update(True)
-
-        print 'save configuration'
 
 
 class ZDSNotification(object):
@@ -469,18 +490,17 @@ class UpdateThread(threading.Thread):
         super(UpdateThread, self).__init__()
 
     def connect(self):
-        auth()
+        auth('admin', 'admin')
 
     def run(self):
-        #self.connect()
+        self.connect()
         html_output = get_home_page()
-        # TODO dégager bsoup
-        soup = bs4.BeautifulSoup(html_output)
-        list_mp = get_mp(soup)
-        list_notif = get_notifications_forum(soup)
 
-        # détruit le tree pour libérer la mémoire
-        soup.decompose()
+        root = lxml.html.fromstring(html_output)
+        list_mp = get_mp(root)
+        list_notif = get_notifications_forum(root)
+
+        del root
 
         gobject.idle_add(z.set_mp, list_mp)
         gobject.idle_add(z.set_notifications_forums, list_notif)
@@ -491,6 +511,8 @@ class UpdateThread(threading.Thread):
 
 
 if __name__ == "__main__":
+    if gc.isenabled() == False:
+        gc.enable()
     zdsindicator_gconf = GConf(app_identifier)
     z = ZDSNotification()
     z.update()
