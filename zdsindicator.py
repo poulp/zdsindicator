@@ -314,27 +314,32 @@ class ZDSNotification(object):
 
         self.menu = gtk.Menu()
 
-        self.mp_menu = gtk.MenuItem('Messages Privés')
-        self.mp_menu.show()
-        self.menu.append(self.mp_menu)
+        self.menu_mp = gtk.MenuItem('Messages Privés')
+        self.menu_mp.show()
+        self.menu.append(self.menu_mp)
 
-        self.notif_menu = gtk.MenuItem('Notifications')
-        self.notif_menu.show()
-        self.menu.append(self.notif_menu)
+        self.menu_notif = gtk.MenuItem('Notifications')
+        self.menu_notif.show()
+        self.menu.append(self.menu_notif)
 
         separator = gtk.SeparatorMenuItem()
         separator.show()
         self.menu.append(separator)
+
+        menu_refresh = gtk.MenuItem('Rafraichir')
+        menu_refresh.show()
+        menu_refresh.connect('activate', self.refresh)
+        self.menu.append(menu_refresh)
 
         menu_configure = gtk.MenuItem('Paramètres')
         menu_configure.show()
         menu_configure.connect('activate', ConfigureDialog)
         self.menu.append(menu_configure)
 
-        quit_menu = gtk.ImageMenuItem(gtk.STOCK_QUIT)
-        quit_menu.connect("activate", self.quit)
-        quit_menu.show()
-        self.menu.append(quit_menu)
+        menu_quit = gtk.ImageMenuItem(gtk.STOCK_QUIT)
+        menu_quit.connect("activate", self.quit)
+        menu_quit.show()
+        self.menu.append(menu_quit)
 
         self.menu.show()
         self.ind.set_menu(self.menu)
@@ -344,6 +349,9 @@ class ZDSNotification(object):
 
     def quit(self, widget, data=None):
         gtk.main_quit()
+
+    def refresh(self, widget):
+        self.update()
 
     def send_mp_notification(self, nb_mp):
         if nb_mp > 0:
@@ -358,7 +366,7 @@ class ZDSNotification(object):
             n.show()
 
     def set_mp(self, list_mp):
-        self.mp_menu.set_label("Message Privés ("+str(len(list_mp))+")")
+        self.menu_mp.set_label("Message Privés ("+str(len(list_mp))+")")
 
         submenu = gtk.Menu()
 
@@ -373,10 +381,10 @@ class ZDSNotification(object):
             item.show()
             submenu.append(item)
 
-        self.mp_menu.set_submenu(submenu)
+        self.menu_mp.set_submenu(submenu)
 
     def set_notifications_forums(self, list_notif):
-        self.notif_menu.set_label("Notifications ("+str(len(list_notif))+")")
+        self.menu_notif.set_label("Notifications ("+str(len(list_notif))+")")
 
         submenu = gtk.Menu()
 
@@ -391,7 +399,7 @@ class ZDSNotification(object):
             item.show()
             submenu.append(item)
 
-        self.notif_menu.set_submenu(submenu)
+        self.menu_notif.set_submenu(submenu)
 
     def menuitem_response_website(self, data, url):
         webbrowser.open(url)
