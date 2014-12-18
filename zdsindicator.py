@@ -13,7 +13,7 @@ import gobject
 import threading
 
 URL = 'http://localhost:8000'
-global client
+client = requests.Session()
 
 app_name = 'ZdsIndicator'
 app_identifier = 'zdsindicator'
@@ -28,10 +28,11 @@ gobject.threads_init()
 ##############################
 
 
-def connect(client):
+def auth():
+    # première requète pour récuperer le csrftoken
     try:
         s = client.get(URL+'/membres/connexion/')
-    except requests.exceptions.RequestException as e:
+    except requests.exceptions.RequestException:
         print "Probleme connexion"
         sys.exit(1)
 
@@ -44,48 +45,49 @@ def connect(client):
     }
 
     try:
-        s = client.post(URL+'/membres/connexion/', data=params)
-    except requests.exceptions.RequestException as e:
+        client.post(URL+'/membres/connexion/', data=params)
+    except requests.exceptions.RequestException:
         print "Probleme connexion"
         sys.exit(1)
 
-def get_home_page(client):
+
+def get_home_page():
     try:
         response = client.get(URL)
-    except requests.exceptions.RequestException as e:
+    except requests.exceptions.RequestException:
         print "Probleme connexion"
         sys.exit(1)
     return response.content
-    
+
+
 def get_mp(soup):
-    #soup = bs4.BeautifulSoup(html_output)
     list_mp = []
 
     for node in soup.findAll(attrs={'class': 'notifs-links'}):
         for li_mp in node.div.div.ul.find_all('li'):
             tmp = Notification(
-                    href=li_mp.a['href'],
-                    username= li_mp.a.contents[3].string,
-                    date= li_mp.a.contents[5].string,
-                    topic= li_mp.a.contents[7].string,
-                    avatar = li_mp.a.img['src']
+                href=li_mp.a['href'],
+                username=li_mp.a.contents[3].string,
+                date=li_mp.a.contents[5].string,
+                topic=li_mp.a.contents[7].string,
+                avatar=li_mp.a.img['src']
             )
             list_mp.append(tmp)
     return list_mp
 
+
 def get_notifications_forum(soup):
-    #soup = bs4.BeautifulSoup(html_output)
     list_notif = []
     
     for node in soup.findAll(attrs={'class': 'notifs-links'}):
         for li_notif in node.contents[3].div.ul.find_all('li'):
             if not li_notif.get('class')[0] == 'dropdown-empty-message':
                 tmp = Notification(
-                        href=li_notif.a['href'],
-                        username= li_notif.a.contents[3].string,
-                        date= li_notif.a.contents[5].string,
-                        topic= li_notif.a.contents[7].string,
-                        avatar = li_notif.a.img['src']
+                    href=li_notif.a['href'],
+                    username=li_notif.a.contents[3].string,
+                    date=li_notif.a.contents[5].string,
+                    topic=li_notif.a.contents[7].string,
+                    avatar=li_notif.a.img['src']
                 )
                 list_notif.append(tmp)
     return list_notif
@@ -93,6 +95,7 @@ def get_notifications_forum(soup):
 ##############################
 # CORE CLASS
 ##############################
+
 
 class Notification(object):
     def __init__(self, href, username, date, topic, avatar):
@@ -102,17 +105,18 @@ class Notification(object):
         self.topic = topic
         self.avatar = avatar
 
+
 class ConnectDialog(object):
-    def __init__(self, widget):
+    def __init__(self):
         pass
 
 
 class ConfigureDialog(object):
-    def __init__(self, widget):
+    def __init__(self):
         self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
         self.window.set_position(gtk.WIN_POS_CENTER)
         self.window.set_title('Paramètres')
-        self.window.connect('delete_event',self.cancel_dialog)
+        self.window.connect('delete_event', self.cancel_dialog)
         self.window.connect('key-press-event', self.keypress)
         self.window.set_border_width(10)
 
@@ -127,7 +131,6 @@ class ConfigureDialog(object):
         self.activate_notifications_check = gtk.CheckButton("Afficher les notifications")
         vbox_check.pack_start(self.activate_notifications_check, True, True, 2)
         self.activate_notifications_check.show()
-
 
         hbox_button = gtk.HBox(True, 2)
         hbox_button.show()
@@ -167,7 +170,7 @@ class ConfigureDialog(object):
 
 class ZDSNotification(object):
     def __init__(self):
-        self.ind = appindicator.Indicator(app_name,'zdsindicator', appindicator.CATEGORY_APPLICATION_STATUS)
+        self.ind = appindicator.Indicator(app_name, 'zdsindicator', appindicator.CATEGORY_APPLICATION_STATUS)
         self.ind.set_status(appindicator.STATUS_ACTIVE)
         self.ind.set_attention_icon("indicator-messages-new")
         self.ind.set_icon_theme_path(icon_path)
@@ -192,10 +195,10 @@ class ZDSNotification(object):
         menu_configure.connect('activate', ConfigureDialog)
         self.menu.append(menu_configure)
 
-        quit = gtk.ImageMenuItem(gtk.STOCK_QUIT)
-        quit.connect("activate", self.quit)
-        quit.show()
-        self.menu.append(quit)
+        quit_menu = gtk.ImageMenuItem(gtk.STOCK_QUIT)
+        quit_menu.connect("activate", self.quit)
+        quit_menu.show()
+        self.menu.append(quit_menu)
         
         self.menu.show()
         self.ind.set_menu(self.menu)
@@ -218,7 +221,7 @@ class ZDSNotification(object):
             n = pynotify.Notification('Zeste de Savoir', str(nb_notif)+' notifications', image)
             n.show()
 
-    def setMP(self, list_mp=[]):
+    def set_mp(self, list_mp):
         self.mp_menu.set_label("Message Privés ("+str(len(list_mp))+")")
 
         submenu = gtk.Menu()
@@ -236,7 +239,7 @@ class ZDSNotification(object):
 
         self.mp_menu.set_submenu(submenu)
 
-    def setNotificationsForums(self, list_notif=[]):
+    def set_notifications_forums(self, list_notif):
         self.notif_menu.set_label("Notifications ("+str(len(list_notif))+")")
 
         submenu = gtk.Menu()
@@ -268,11 +271,11 @@ class UpdateThread(threading.Thread):
         super(UpdateThread, self).__init__()
 
     def connect(self):
-        connect(client)
+        auth()
 
     def run(self):
         self.connect()
-        html_output = get_home_page(client)
+        html_output = get_home_page()
         soup = bs4.BeautifulSoup(html_output)
         list_mp = get_mp(soup)
         list_notif = get_notifications_forum(soup)
@@ -280,18 +283,15 @@ class UpdateThread(threading.Thread):
         # détruit le tree pour libérer la mémoire
         soup.decompose()
 
-        gobject.idle_add(z.setMP, list_mp)
-        gobject.idle_add(z.setNotificationsForums, list_notif)
+        gobject.idle_add(z.set_mp, list_mp)
+        gobject.idle_add(z.set_notifications_forums, list_notif)
 
         if activate_notifications:
             z.send_mp_notification(len(list_mp))
             z.send_notif_notification(len(list_notif))
 
-        print "end thread"
-
 
 if __name__ == "__main__":
-    client = requests.Session()
     z = ZDSNotification()
     z.update()
     gtk.main()
