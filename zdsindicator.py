@@ -45,9 +45,8 @@ def auth(username, password):
     # première requète pour récuperer le csrftoken
     try:
         s = client.get(URL+'/membres/connexion/')
-    except requests.exceptions.RequestException:
-        print "Probleme connexion"
-        sys.exit(1)
+    except requests.exceptions.RequestException as e:
+        raise e
 
     csrftoken = s.cookies['csrftoken']
 
@@ -62,9 +61,8 @@ def auth(username, password):
         s = client.post(URL+'/membres/connexion/', data=params)
         if s.url == URL+"/":
             is_auth = True
-    except requests.exceptions.RequestException:
-        print "Probleme connexion"
-        sys.exit(1)
+    except requests.exceptions.RequestException as e:
+        raise e
 
     return is_auth
 
@@ -77,12 +75,21 @@ def get_home_page():
         sys.exit(1)
     return response.content
 
+
+def get_member_connexion_page():
+    try:
+        response = client.get(URL+"/membres/connexion")
+    except requests.exceptions.RequestException:
+        print "Probleme connexion"
+        sys.exit(1)
+    return response.content
+
 ##############################
 # PARSING
 ##############################
 
 
-def is_auth_from_homepage():
+def is_auth_from_homepage(root):
     return False
 
 def get_mp(root):
@@ -287,7 +294,7 @@ class Notification(object):
         self.avatar = avatar
 
 
-class ConnectDialog(object):
+class AuthenticationtDialog(object):
     def __init__(self):
         pass
 
@@ -408,6 +415,10 @@ class ZDSNotification(object):
         self.menu_notif.show()
         self.menu.append(self.menu_notif)
 
+        self.menu_serveur_error = gtk.MenuItem('Problème de connexion au serveur')
+        self.menu_serveur_error.set_sensitive(False)
+        self.menu.append(self.menu_serveur_error)
+
         separator = gtk.SeparatorMenuItem()
         separator.show()
         self.menu.append(separator)
@@ -478,7 +489,10 @@ class ZDSNotification(object):
     def menuitem_response_website(self, data, url):
         webbrowser.open(url)
 
-    def update(self, timeoverride=False):
+    def update(self, timeoverride=False, stopupdate=False):
+
+        if stopupdate:
+            return False
 
         if timeoverride:
             self.timeout_id = gobject.timeout_add(refresh_time, self.update)
@@ -496,18 +510,35 @@ class ZDSNotification(object):
         self.ind.set_icon("zdsindicator-"+mode)
 
 
+class AuthenticationThread(threading.Thread):
+    def __init__(self):
+        super(AuthenticationThread, self).__init__()
+
+    def run(self):
+        html_home_page = get_home_page()
 
 class UpdateThread(threading.Thread):
     def __init__(self):
         super(UpdateThread, self).__init__()
 
     def connect(self):
-        auth('admin', 'admin')
+        return auth('admin', 'admin')
 
     def run(self):
+        print "update"
+        z.menu_serveur_error.hide()
+        z.menu_mp.show()
+        z.menu_notif.show()
         gobject.idle_add(z.set_icon_app, "parsing")
 
-        self.connect()
+        try:
+            self.connect()
+        except requests.exceptions.RequestException as e:
+            z.menu_serveur_error.show()
+            z.menu_mp.hide()
+            z.menu_notif.hide()
+            return
+
         html_output = get_home_page()
 
         root = lxml.html.fromstring(html_output)
@@ -528,7 +559,7 @@ class UpdateThread(threading.Thread):
 
 
 if __name__ == "__main__":
-    if gc.isenabled() == False:
+    if not gc.isenabled():
         gc.enable()
     zdsindicator_gconf = GConf(app_identifier)
     z = ZDSNotification()
