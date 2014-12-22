@@ -21,8 +21,10 @@ Installation
 Installer tout d'abord les dépendances. Télécharger la dernière archive disponible, puis l'extraire.
 Une fois dans le répertoire de l'application :
 
-    python setup.py install
+    .. code::bash
+        python setup.py install
 
 Pour lancer l'application :
 
-    zdsindicator
+    .. code::bash
+        zdsindicator
