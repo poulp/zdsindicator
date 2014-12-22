@@ -25,6 +25,7 @@ app_identifier = 'zdsindicator'
 icon_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'icons')
 
 stoptimer = False
+username = ""
 
 # temp de rafraichissement par défaut en ms
 refresh_time = 60000
@@ -307,8 +308,49 @@ class Notification(object):
 
 
 class AuthenticationtDialog(object):
-    def __init__(self):
-        pass
+    def __init__(self, widget):
+
+        self.dialog = gtk.Dialog()
+
+        label_username = gtk.Label("Nom d'utilisateur")
+        label_username.show()
+        self.dialog.get_content_area().add(label_username)
+
+        self.entry_username = gtk.Entry()
+        self.entry_username.show()
+        self.entry_username.set_activates_default(True)
+        self.dialog.get_content_area().add(self.entry_username)
+
+        label_password = gtk.Label("Mot de passe")
+        label_password.show()
+        self.dialog.get_content_area().add(label_password)
+
+        self.entry_password = gtk.Entry()
+        self.entry_password.set_visibility(False)
+        self.entry_password.show()
+        self.dialog.get_content_area().add(self.entry_password)
+
+        self.dialog.add_buttons(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_OK, gtk.RESPONSE_OK)
+        self.dialog.set_default(self.dialog.get_widget_for_response(gtk.RESPONSE_OK))
+        self.dialog.connect("response", self.response)
+
+        self.dialog.run()
+
+    def response(self, widget, data):
+        global username
+
+        if data == gtk.RESPONSE_CANCEL:
+            self.dialog.destroy()
+
+        if data == gtk.RESPONSE_OK:
+            username = self.entry_username.get_text()
+            response = auth(self.entry_username.get_text(), self.entry_password.get_text())
+            if response:
+                self.dialog.destroy()
+                UpdateThread().start()
+            else:
+                self.entry_username.set_text("")
+                self.entry_password.set_text("")
 
 
 class ConfigureDialog(object):
@@ -433,6 +475,11 @@ class ZDSNotification(object):
         self.menu_serveur_error.set_sensitive(False)
         self.menu.append(self.menu_serveur_error)
 
+        self.menu_auth = gtk.MenuItem('Connexion')
+        self.menu_auth.hide()
+        self.menu_auth.connect('activate', AuthenticationtDialog)
+        self.menu.append(self.menu_auth)
+
         separator = gtk.SeparatorMenuItem()
         separator.show()
         self.menu.append(separator)
@@ -460,9 +507,6 @@ class ZDSNotification(object):
 
     def quit(self, widget, data=None):
         gtk.main_quit()
-
-    def refresh(self, widget):
-        self.update()
 
     def set_mp(self, list_mp):
         self.menu_mp.set_label("Message Privés ("+str(len(list_mp))+")")
@@ -503,6 +547,10 @@ class ZDSNotification(object):
     def menuitem_response_website(self, data, url):
         webbrowser.open(url)
 
+    def refresh(self, widget):
+        print "refresh"
+        UpdateThread().start()
+
     def update(self, timeoverride=False):
 
         if self.stopupdate:
@@ -524,33 +572,27 @@ class ZDSNotification(object):
 
         self.ind.set_icon("zdsindicator-"+mode)
 
-    def show_menu_item_error_server(self, error_label):
+    def show_menu_item_error_server(self, error_label, show_connection=False):
         self.menu_serveur_error.set_label(error_label)
         self.menu_serveur_error.show()
         self.menu_mp.hide()
         self.menu_notif.hide()
+        if show_connection:
+            self.menu_auth.show()
 
     def show_menu_item_normal(self):
         self.menu_serveur_error.hide()
         self.menu_mp.show()
         self.menu_notif.show()
+        self.menu_auth.hide()
 
-
-class AuthenticationThread(threading.Thread):
-    def __init__(self):
-        super(AuthenticationThread, self).__init__()
-
-    def run(self):
-        html_home_page = get_home_page()
 
 class UpdateThread(threading.Thread):
     def __init__(self):
         super(UpdateThread, self).__init__()
 
-    def connect(self):
-        return auth('admin', 'adin')
-
     def run(self):
+        print "update"
         gobject.idle_add(z.show_menu_item_normal)
         gobject.idle_add(z.set_icon_app, "parsing")
 
@@ -570,7 +612,7 @@ class UpdateThread(threading.Thread):
                 send_notif_notification(len(list_notif))
         else:
             try:
-                is_auth = self.connect()
+                is_auth = auth(username, "")
                 if is_auth:
                     html_output = get_home_page()
                     root = lxml.html.fromstring(html_output)
@@ -586,7 +628,7 @@ class UpdateThread(threading.Thread):
                         send_mp_notification(len(list_mp))
                         send_notif_notification(len(list_notif))
                 else:
-                    gobject.idle_add(z.show_menu_item_error_server, "Vous n'êtes pas authentifié")
+                    gobject.idle_add(z.show_menu_item_error_server, "Vous n'êtes pas authentifié", True)
                     gobject.idle_add(z.set_icon_app, "icon")
                     z.stopupdate = True
 
