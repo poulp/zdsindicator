@@ -28,7 +28,7 @@ stoptimer = False
 username = ""
 
 # temp de rafraichissement par défaut en ms
-refresh_time = 60000
+refresh_time = 10000
 
 # default activate notifications
 activate_notifications = False
@@ -69,11 +69,7 @@ def auth(username, password):
 
 
 def get_home_page():
-    try:
-        response = client.get(URL)
-    except requests.exceptions.RequestException:
-        print "Probleme connexion"
-        sys.exit(1)
+    response = client.get(URL)
     return response.content
 
 
@@ -348,6 +344,7 @@ class AuthenticationtDialog(object):
             if response:
                 self.dialog.destroy()
                 UpdateThread().start()
+                z.set_loop_update()
             else:
                 self.entry_username.set_text("")
                 self.entry_password.set_text("")
@@ -437,7 +434,9 @@ class ConfigureDialog(object):
             refresh_time = int(self.scaletimer.get_value()*60000)
 
         self.window.hide()
-        z.update(overridetime)
+
+        gobject.source_remove(z.timeout_id)
+        z.set_loop_update()
 
 
 class ZDSNotification(object):
@@ -453,13 +452,14 @@ class ZDSNotification(object):
         self.ind.set_icon("zdsindicator-icon")
 
         self.stopupdate = False
+        self.timeout_id = -1
 
         # initialisation des paramètres
         if zdsindicator_gconf['activate_notifications'] is not None:
             activate_notifications = zdsindicator_gconf['activate_notifications']
 
-        if zdsindicator_gconf['refresh_time'] is not None:
-            refresh_time = zdsindicator_gconf['refresh_time']
+        #if zdsindicator_gconf['refresh_time'] is not None:
+            #refresh_time = zdsindicator_gconf['refresh_time']
 
         self.menu = gtk.Menu()
 
@@ -503,10 +503,14 @@ class ZDSNotification(object):
         self.ind.set_menu(self.menu)
 
         pynotify.init('ZDSNotification')
-        self.timeout_id = gobject.timeout_add(refresh_time, self.update)
+        self.set_loop_update()
 
     def quit(self, widget, data=None):
         gtk.main_quit()
+
+    def set_loop_update(self):
+        self.timeout_id = gobject.timeout_add(refresh_time, self.update)
+
 
     def set_mp(self, list_mp):
         self.menu_mp.set_label("Message Privés ("+str(len(list_mp))+")")
@@ -596,12 +600,22 @@ class UpdateThread(threading.Thread):
         gobject.idle_add(z.show_menu_item_normal)
         gobject.idle_add(z.set_icon_app, "parsing")
 
-        html_output = get_home_page()
+        try:
+            html_output = get_home_page()
+        except requests.exceptions.RequestException :
+            gobject.idle_add(z.show_menu_item_error_server, "Problème de connexion serveur")
+            return
+
         root = lxml.html.fromstring(html_output)
 
         if is_auth_from_homepage(root):
-            list_mp = get_mp(root)
-            list_notif = get_notifications_forum(root)
+
+            try:
+                list_mp = get_mp(root)
+                list_notif = get_notifications_forum(root)
+            except requests.exceptions.RequestException :
+                gobject.idle_add(z.show_menu_item_error_server, "Problème de connexion serveur")
+                return
 
             gobject.idle_add(z.set_mp, list_mp)
             gobject.idle_add(z.set_notifications_forums, list_notif)
@@ -614,11 +628,20 @@ class UpdateThread(threading.Thread):
             try:
                 is_auth = auth(username, "")
                 if is_auth:
-                    html_output = get_home_page()
+                    try:
+                        html_output = get_home_page()
+                    except requests.exceptions.RequestException :
+                        gobject.idle_add(z.show_menu_item_error_server, "Problème de connexion serveur")
+                        return
+
                     root = lxml.html.fromstring(html_output)
 
-                    list_mp = get_mp(root)
-                    list_notif = get_notifications_forum(root)
+                    try:
+                        list_mp = get_mp(root)
+                        list_notif = get_notifications_forum(root)
+                    except requests.exceptions.RequestException :
+                        gobject.idle_add(z.show_menu_item_error_server, "Problème de connexion serveur")
+                        return
 
                     gobject.idle_add(z.set_mp, list_mp)
                     gobject.idle_add(z.set_notifications_forums, list_notif)
@@ -630,7 +653,7 @@ class UpdateThread(threading.Thread):
                 else:
                     gobject.idle_add(z.show_menu_item_error_server, "Vous n'êtes pas authentifié", True)
                     gobject.idle_add(z.set_icon_app, "icon")
-                    z.stopupdate = True
+                    gobject.source_remove(z.timeout_id)
 
             except requests.exceptions.RequestException as e:
                 gobject.idle_add(z.show_menu_item_error_server, "Problème de connexion serveur")
