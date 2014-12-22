@@ -90,12 +90,21 @@ def get_member_connexion_page():
 
 
 def is_auth_from_homepage(root):
-    return False
+    is_auth = False
+
+    result = root.find_class("unlogged")
+    if result == []:
+        is_auth = True
+
+    return is_auth
 
 def get_mp(root):
     list_mp = []
 
     result = root.find_class("notifs-links")
+    if not result:
+        return []
+
     li_mp = result[0].getchildren()[0].getchildren()[1].getchildren()[1].getchildren()
     for mp in li_mp:
 
@@ -118,6 +127,9 @@ def get_notifications_forum(root):
     list_notif = []
 
     result = root.find_class("notifs-links")
+    if not result:
+        return []
+
     li_notif = result[0].getchildren()[1].getchildren()[1].getchildren()[1]
 
     for notif in li_notif:
@@ -398,6 +410,8 @@ class ZDSNotification(object):
         self.ind.set_icon_theme_path(icon_path)
         self.ind.set_icon("zdsindicator-icon")
 
+        self.stopupdate = False
+
         # initialisation des paramètres
         if zdsindicator_gconf['activate_notifications'] is not None:
             activate_notifications = zdsindicator_gconf['activate_notifications']
@@ -489,9 +503,10 @@ class ZDSNotification(object):
     def menuitem_response_website(self, data, url):
         webbrowser.open(url)
 
-    def update(self, timeoverride=False, stopupdate=False):
+    def update(self, timeoverride=False):
 
-        if stopupdate:
+        if self.stopupdate:
+            self.stopupdate = False
             return False
 
         if timeoverride:
@@ -509,6 +524,17 @@ class ZDSNotification(object):
 
         self.ind.set_icon("zdsindicator-"+mode)
 
+    def show_menu_item_error_server(self, error_label):
+        self.menu_serveur_error.set_label(error_label)
+        self.menu_serveur_error.show()
+        self.menu_mp.hide()
+        self.menu_notif.hide()
+
+    def show_menu_item_normal(self):
+        self.menu_serveur_error.hide()
+        self.menu_mp.show()
+        self.menu_notif.show()
+
 
 class AuthenticationThread(threading.Thread):
     def __init__(self):
@@ -522,40 +548,51 @@ class UpdateThread(threading.Thread):
         super(UpdateThread, self).__init__()
 
     def connect(self):
-        return auth('admin', 'admin')
+        return auth('admin', 'adin')
 
     def run(self):
-        print "update"
-        z.menu_serveur_error.hide()
-        z.menu_mp.show()
-        z.menu_notif.show()
+        gobject.idle_add(z.show_menu_item_normal)
         gobject.idle_add(z.set_icon_app, "parsing")
 
-        try:
-            self.connect()
-        except requests.exceptions.RequestException as e:
-            z.menu_serveur_error.show()
-            z.menu_mp.hide()
-            z.menu_notif.hide()
-            return
-
         html_output = get_home_page()
-
         root = lxml.html.fromstring(html_output)
-        list_mp = get_mp(root)
-        list_notif = get_notifications_forum(root)
 
-        del root
+        if is_auth_from_homepage(root):
+            list_mp = get_mp(root)
+            list_notif = get_notifications_forum(root)
 
-        gobject.idle_add(z.set_mp, list_mp)
-        gobject.idle_add(z.set_notifications_forums, list_notif)
+            gobject.idle_add(z.set_mp, list_mp)
+            gobject.idle_add(z.set_notifications_forums, list_notif)
+            gobject.idle_add(z.set_icon_app, "icon")
 
-        gobject.idle_add(z.set_icon_app, "icon")
+            if activate_notifications:
+                send_mp_notification(len(list_mp))
+                send_notif_notification(len(list_notif))
+        else:
+            try:
+                is_auth = self.connect()
+                if is_auth:
+                    html_output = get_home_page()
+                    root = lxml.html.fromstring(html_output)
 
+                    list_mp = get_mp(root)
+                    list_notif = get_notifications_forum(root)
 
-        if activate_notifications:
-            send_mp_notification(len(list_mp))
-            send_notif_notification(len(list_notif))
+                    gobject.idle_add(z.set_mp, list_mp)
+                    gobject.idle_add(z.set_notifications_forums, list_notif)
+                    gobject.idle_add(z.set_icon_app, "icon")
+
+                    if activate_notifications:
+                        send_mp_notification(len(list_mp))
+                        send_notif_notification(len(list_notif))
+                else:
+                    gobject.idle_add(z.show_menu_item_error_server, "Vous n'êtes pas authentifié")
+                    gobject.idle_add(z.set_icon_app, "icon")
+                    z.stopupdate = True
+
+            except requests.exceptions.RequestException as e:
+                gobject.idle_add(z.show_menu_item_error_server, "Problème de connexion serveur")
+                return
 
 
 if __name__ == "__main__":
