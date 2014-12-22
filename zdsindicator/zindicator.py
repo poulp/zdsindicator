@@ -32,7 +32,7 @@ class ZIndicator(object):
         # temp de rafraichissement par défaut en ms
         self.refresh_time = 10000
         # base url
-        self.URL = 'http://localhost:8000'
+        self.URL = 'https://zestedesavoir.com'
         # username member
         self.username = ""
 
@@ -103,7 +103,7 @@ class ZIndicator(object):
     def set_loop_update(self):
         self.timeout_id = gobject.timeout_add(self.refresh_time, self.update)
 
-    def update(self):
+    def update(self, widget=None):
         UpdateThread(self).start()
         return True
 
