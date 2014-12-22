@@ -652,7 +652,7 @@ class UpdateThread(threading.Thread):
                         send_notif_notification(len(list_notif))
                 else:
                     gobject.idle_add(z.show_menu_item_error_server, "Vous n'êtes pas authentifié", True)
-                    gobject.idle_add(z.set_icon_app, "icon")
+                    gobject.idle_add(z.set_icon_app, "logout")
                     gobject.source_remove(z.timeout_id)
 
             except requests.exceptions.RequestException as e:
