@@ -14,7 +14,6 @@ history = open('HISTORY.rst').read().replace('.. :changelog:', '')
 requirements = [
     "requests",
     "lxml",
-    "appindicator"
 ]
 
 test_requirements = [
