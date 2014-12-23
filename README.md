@@ -23,7 +23,7 @@ Requis
 Installation
 ------------
 
-Installation simple :
+Installation via pip :
 ```
 $ pip install zdsindicator
 ```
