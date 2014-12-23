@@ -30,7 +30,7 @@ class ZIndicator(object):
         # default activate notifications
         self.activate_notifications = False
         # temp de rafraichissement par défaut en ms
-        self.refresh_time = 10000
+        self.refresh_time = 60000
         # base url
         self.URL = 'https://zestedesavoir.com'
         # username member
@@ -72,6 +72,10 @@ class ZIndicator(object):
         separator = gtk.SeparatorMenuItem()
         separator.show()
         self.menu.append(separator)
+
+        self.menu_username = gtk.MenuItem('username')
+        self.menu_username.hide()
+        self.menu.append(self.menu_username)
 
         menu_refresh = gtk.MenuItem('Rafraichir')
         menu_refresh.show()
@@ -150,11 +154,17 @@ class ZIndicator(object):
         # parsing
         self.ind.set_icon("zdsindicator-" + mode)
 
+    def set_menu_username(self, username):
+        self.username = username
+        self.menu_username.set_label(username)
+        self.menu_username.show()
+
     def show_menu_item_error_server(self, error_label, show_connection=False):
         self.menu_serveur_error.set_label(error_label)
         self.menu_serveur_error.show()
         self.menu_mp.hide()
         self.menu_notif.hide()
+        self.menu_username.hide()
         if show_connection:
             self.menu_auth.show()
 
