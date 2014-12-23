@@ -12,7 +12,9 @@ readme = open('README.rst').read()
 history = open('HISTORY.rst').read().replace('.. :changelog:', '')
 
 requirements = [
-    "requests"
+    "requests",
+    "lxml",
+    "appindicator"
 ]
 
 test_requirements = [
