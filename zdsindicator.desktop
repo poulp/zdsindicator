@@ -1,9 +1,0 @@
-[Desktop Entry]
-Version=0.0.1
-Type=Application
-Terminal=false
-Exec=zdsindicator
-Icon=icons/zdsindicator-icon
-Name=ZdsIndicator
-Comment=Notifications Zeste de Savoir
-Categories=Internet;Network;

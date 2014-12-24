@@ -2,7 +2,9 @@
 # -*- coding: utf8 -*-
 
 import gtk
+import os
 import gobject
+import glib
 
 
 class ConfigureDialog(object):
@@ -48,6 +50,11 @@ class ConfigureDialog(object):
         self.activate_notifications_check.show()
         self.activate_notifications_check.set_active(self.indicator.activate_notifications)
 
+        self.activate_autostart = gtk.CheckButton("Lancer au démarrage")
+        vbox_check.pack_start(self.activate_autostart, True, True, 2)
+        self.activate_autostart.show()
+        self.activate_autostart.set_active(self.indicator.autostart)
+
         hbox_button = gtk.HBox(True, 2)
         hbox_button.show()
         vbox_window.pack_start(hbox_button, True, True, 2)
@@ -79,10 +86,35 @@ class ConfigureDialog(object):
         else:
             self.label_refresh_scale.set_text("Rafraichir toutes les " + str(int(value)) + " minutes")
 
+    def autostart_create(self):
+        app_autostart_folder = glib.get_user_config_dir()+'/autostart'
+        content = "[Desktop Entry]\n"+"Type=Application\n"+"Exec="+self.indicator.app_identifier+" --autostarted\n"+"X-GNOME-Autostart-enabled=true\n"+"Icon="+self.indicator.app_identifier+"\n"+"Name="+self.indicator.app_name+"\n"+"Comment="+self.indicator.app_comments
+
+        if not os.path.exists(app_autostart_folder):
+            os.makedirs(app_autostart_folder, 0700)
+
+        f = open(app_autostart_folder+'/zdsindicator.desktop', 'w')
+        f.write(content)
+        f.close()
+
+    def autostart_delete(self):
+        app_autostart_folder = glib.get_user_config_dir()+'/autostart'
+        app_autostart_file = app_autostart_folder + '/zdsindicator.desktop'
+        if os.path.exists(app_autostart_file):
+            os.remove(app_autostart_file)
+
     def save(self, widget, data):
 
         self.indicator.gconf['activate_notifications'] = self.activate_notifications_check.get_active()
         self.indicator.activate_notifications = self.activate_notifications_check.get_active()
+
+        self.indicator.gconf['autostart'] = self.activate_autostart.get_active()
+        self.indicator.autostart = self.activate_autostart.get_active()
+
+        if self.activate_autostart.get_active():
+            self.autostart_create()
+        else:
+            self.autostart_delete()
 
         if not self.indicator.refresh_time == int(self.scaletimer.get_value() * 60000):
             self.indicator.gconf['refresh_time'] = int(self.scaletimer.get_value() * 60000)

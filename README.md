@@ -38,3 +38,5 @@ Pour lancer l'application :
 ```
 $ zdsindicator
 ```
+
+Icônes : https://github.com/SimpleSoftwares/Clemojis

@@ -19,8 +19,9 @@ class ZIndicator(object):
     def __init__(self):
 
         # general configuration
-        self.app_name = 'ZdsIndicator'
+        self.app_name = 'Zds Indicator'
         self.app_identifier = 'zdsindicator'
+        self.app_comments = 'Des notifications pour le site Zeste de Savoir'
         self.client = requests.Session()
         self.stopupdate = False
         self.timeout_id = -1
@@ -31,6 +32,8 @@ class ZIndicator(object):
         self.activate_notifications = False
         # temp de rafraichissement par défaut en ms
         self.refresh_time = 60000
+        # démarrage au lancement
+        self.autostart = False
         # base url
         self.URL = 'https://zestedesavoir.com'
         # username member
@@ -49,6 +52,9 @@ class ZIndicator(object):
 
         if self.gconf['refresh_time'] is not None:
             self.refresh_time = self.gconf['refresh_time']
+
+        if self.gconf['autostart'] is not None:
+            self.autostart = self.gconf['autostart']
 
         self.menu = gtk.Menu()
 
