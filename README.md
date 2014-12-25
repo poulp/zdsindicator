@@ -1,7 +1,7 @@
 [![PyPI version](https://badge.fury.io/py/zdsindicator.png)](http://badge.fury.io/py/zdsindicator)
 
 Zds Indicator
-************
+-------------
 
 Un applet Ubuntu pour Zeste de Savoir. Il permet de visualiser les messages privés et les notifications forums. 
 Testé pour l'instant sur Ubuntu 14.04 et 14.10.
