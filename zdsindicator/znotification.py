@@ -16,3 +16,27 @@ def send_notif_notification(nb_notif, icon_path):
         image = icon_path+'/zdsindicator-forums.png'
         n = pynotify.Notification('Zeste de Savoir', str(nb_notif)+' notifications', image)
         n.show()
+
+
+def send_notif(nb_mp, nb_notif, icon_path):
+    title = 'Zeste de Savoir'
+    content = ''
+    image = icon_path+'/zdsindicator-forums.png'
+
+    if nb_mp:
+        if nb_mp > 1:
+            content += str(nb_mp)+' messages privés non lus'
+        else:
+            content += str(nb_mp)+' message privé non lu'
+
+    if nb_notif:
+        if nb_mp:
+            content += '\n'
+
+        if nb_notif > 1:
+            content += str(nb_notif)+' notifications'
+        else:
+            content += str(nb_notif)+' notification'
+
+    n = pynotify.Notification(title, content, image)
+    n.show()

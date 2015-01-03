@@ -7,7 +7,7 @@ import requests
 from lxml import html
 
 from zrequest import get_home_page, auth
-from znotification import send_mp_notification, send_notif_notification
+from znotification import send_notif
 from zparsing import is_auth_from_homepage, get_mp, get_notifications_forum
 
 
@@ -43,8 +43,7 @@ class UpdateThread(threading.Thread):
             gobject.idle_add(self.indicator.set_icon_app, "icon")
 
             if self.indicator.activate_notifications:
-                send_mp_notification(len(list_mp), self.indicator.icon_path)
-                send_notif_notification(len(list_notif), self.indicator.icon_path)
+                send_notif(len(list_mp), len(list_notif), self.indicator.icon_path)
         else:
             try:
                 is_auth = auth(self.indicator.client, self.indicator.URL, self.indicator.username, "")
@@ -69,8 +68,8 @@ class UpdateThread(threading.Thread):
                     gobject.idle_add(self.indicator.set_icon_app, "icon")
 
                     if self.indicator.activate_notifications:
-                        send_mp_notification(len(list_mp), self.indicator.icon_path)
-                        send_notif_notification(len(list_notif), self.indicator.icon_path)
+                        send_notif(len(list_mp), len(list_notif), self.indicator.icon_path)
+
                 else:
                     gobject.idle_add(self.indicator.show_menu_item_error_server, "Vous n'êtes pas authentifié", True)
                     gobject.idle_add(self.indicator.set_icon_app, "logout")
