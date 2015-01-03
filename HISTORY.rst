@@ -3,7 +3,7 @@
 History
 -------
 
-0.0.3 (2015-01-15)
+0.0.3 (2015-01-03)
 ------------------
 
 * Centralisation des notifications
