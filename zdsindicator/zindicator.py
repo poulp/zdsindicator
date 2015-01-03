@@ -29,7 +29,7 @@ class ZIndicator(object):
         self.gconf = GConf(self.app_identifier)
 
         # default activate notifications
-        self.activate_notifications = False
+        self.activate_notifications = True
         # temp de rafraichissement par défaut en ms
         self.refresh_time = 60000
         # démarrage au lancement
