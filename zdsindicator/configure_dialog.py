@@ -19,6 +19,7 @@ class ConfigureDialog(object):
         self.window.connect('key-press-event', self.keypress)
         self.window.set_border_width(10)
         self.window.set_icon_from_file(self.indicator.icon_path+"/zdsindicator-icon.png")
+        self.window.set_resizable(False)
 
         vbox_window = gtk.VBox(True, 2)
         self.window.add(vbox_window)

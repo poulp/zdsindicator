@@ -21,7 +21,7 @@ def send_notif_notification(nb_notif, icon_path):
 def send_notif(nb_mp, nb_notif, icon_path):
     title = 'Zeste de Savoir'
     content = ''
-    image = icon_path+'/zdsindicator-forums.png'
+    image = icon_path+'/zdsindicator-icon.png'
 
     if nb_mp:
         if nb_mp > 1:

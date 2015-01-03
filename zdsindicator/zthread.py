@@ -17,7 +17,6 @@ class UpdateThread(threading.Thread):
         self.indicator = indicator
 
     def run(self):
-        print "update"
         gobject.idle_add(self.indicator.show_menu_item_normal)
         gobject.idle_add(self.indicator.set_icon_app, "parsing")
 
