@@ -38,5 +38,6 @@ def send_notif(nb_mp, nb_notif, icon_path):
         else:
             content += str(nb_notif)+' notification'
 
-    n = pynotify.Notification(title, content, image)
-    n.show()
+    if nb_notif or nb_mp:
+        n = pynotify.Notification(title, content, image)
+        n.show()
