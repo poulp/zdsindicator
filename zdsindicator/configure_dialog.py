@@ -57,17 +57,17 @@ class ConfigureDialog(object):
 
         hbox_button = gtk.HBox(True, 2)
         hbox_button.show()
-        vbox_window.pack_start(hbox_button, True, True, 2)
+        vbox_window.pack_start(hbox_button, False, False, 2)
 
         button_cancel = gtk.Button("Annuler")
         button_cancel.show()
         button_cancel.connect('clicked', self.cancel_dialog)
-        hbox_button.pack_start(button_cancel, True, True, 2)
+        hbox_button.pack_start(button_cancel, False, True, 2)
 
         button_save = gtk.Button("Sauver")
         button_save.show()
         button_save.connect('clicked', self.save, None)
-        hbox_button.pack_start(button_save, True, True, 2)
+        hbox_button.pack_start(button_save, False, True, 2)
 
         self.window.set_keep_above(True)
         self.window.show()

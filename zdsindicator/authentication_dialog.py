@@ -15,6 +15,7 @@ class AuthenticationtDialog(object):
         self.dialog.set_title("Connexion")
         self.dialog.set_default_size(200, 200)
         self.dialog.set_icon_from_file(self.indicator.icon_path+"/zdsindicator-icon.png")
+        self.dialog.set_border_width(10)
 
         label_username = gtk.Label("Nom d'utilisateur")
         label_username.show()
