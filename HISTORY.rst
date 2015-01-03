@@ -6,9 +6,9 @@ History
 0.0.3 (2015-01-15)
 ------------------
 
- * Centralisation des notifications
- * Nom d'utilisateur dans le menu
- * Option de lancement au démarrage
+* Centralisation des notifications
+* Nom d'utilisateur dans le menu
+* Option de lancement au démarrage
 
 0.0.1 (2014-12-23)
 ---------------------
