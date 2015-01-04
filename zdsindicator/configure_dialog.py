@@ -14,12 +14,15 @@ class ConfigureDialog(object):
 
         self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
         self.window.set_position(gtk.WIN_POS_CENTER)
+        self.window.set_resizable(False)
         self.window.set_title('Paramètres')
         self.window.connect('delete_event', self.cancel_dialog)
         self.window.connect('key-press-event', self.keypress)
         self.window.set_border_width(10)
         self.window.set_icon_from_file(self.indicator.icon_path+"/zdsindicator-icon.png")
-        self.window.set_resizable(False)
+
+        #pour afficher les icones sur les boutons
+        gtk.settings_get_default().props.gtk_button_images = True
 
         vbox_window = gtk.VBox(True, 2)
         self.window.add(vbox_window)
@@ -56,9 +59,25 @@ class ConfigureDialog(object):
         self.activate_autostart.show()
         self.activate_autostart.set_active(self.indicator.autostart)
 
+        hbox_compte = gtk.HBox(True, 2)
+        hbox_compte.show()
+        vbox_window.pack_start(hbox_compte, True, False, 0)
+
+        label_username_compte = gtk.Label("Aucun compte zds enregistré")
+        label_username_compte.show()
+        hbox_compte.pack_start(label_username_compte, True, True, 2)
+
+        button_compte = gtk.Button("")
+        image = gtk.Image()
+        image.set_from_stock(gtk.STOCK_ADD, gtk.ICON_SIZE_BUTTON)
+        button_compte.set_image(image)
+        button_compte.show()
+        button_compte.connect('clicked', self.cancel_dialog)
+        hbox_compte.pack_start(button_compte, False, False, 2)
+
         hbox_button = gtk.HBox(True, 2)
         hbox_button.show()
-        vbox_window.pack_start(hbox_button, False, False, 2)
+        vbox_window.pack_start(hbox_button, False, False, 0)
 
         button_cancel = gtk.Button("Annuler")
         button_cancel.show()
