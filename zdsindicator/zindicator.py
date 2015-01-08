@@ -78,10 +78,6 @@ class ZIndicator(object):
         separator.show()
         self.menu.append(separator)
 
-        self.menu_username = Gtk.MenuItem('username')
-        self.menu_username.hide()
-        self.menu.append(self.menu_username)
-
         menu_refresh = Gtk.MenuItem('Rafraichir')
         menu_refresh.show()
         menu_refresh.connect('activate', self.update)
@@ -159,17 +155,11 @@ class ZIndicator(object):
         # parsing
         self.ind.set_icon("zdsindicator-" + mode)
 
-    def set_menu_username(self, username):
-        self.username = username
-        self.menu_username.set_label(username)
-        self.menu_username.show()
-
     def show_menu_item_error_server(self, error_label, show_connection=False):
         self.menu_serveur_error.set_label(error_label)
         self.menu_serveur_error.show()
         self.menu_mp.hide()
         self.menu_notif.hide()
-        self.menu_username.hide()
         if show_connection:
             self.menu_auth.show()
 

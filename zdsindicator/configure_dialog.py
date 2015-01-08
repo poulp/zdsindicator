@@ -2,9 +2,7 @@
 # -*- coding: utf8 -*-
 
 import os
-import glib
-
-from gi.repository import Gtk, GObject
+from gi.repository import Gtk, GObject, GLib
 
 
 class ConfigureDialog(object):
@@ -102,7 +100,7 @@ class ConfigureDialog(object):
             self.label_refresh_scale.set_text("Rafraichir toutes les " + str(int(value)) + " minutes")
 
     def autostart_create(self):
-        app_autostart_folder = glib.get_user_config_dir()+'/autostart'
+        app_autostart_folder = GLib.get_user_config_dir()+'/autostart'
         content = "[Desktop Entry]\n"+"Type=Application\n"+"Exec="+self.indicator.app_identifier+" --autostarted\n"+"X-GNOME-Autostart-enabled=true\n"+"Icon="+self.indicator.app_identifier+"\n"+"Name="+self.indicator.app_name+"\n"+"Comment="+self.indicator.app_comments
 
         if not os.path.exists(app_autostart_folder):
@@ -113,7 +111,7 @@ class ConfigureDialog(object):
         f.close()
 
     def autostart_delete(self):
-        app_autostart_folder = glib.get_user_config_dir()+'/autostart'
+        app_autostart_folder = GLib.get_user_config_dir()+'/autostart'
         app_autostart_file = app_autostart_folder + '/zdsindicator.desktop'
         if os.path.exists(app_autostart_file):
             os.remove(app_autostart_file)

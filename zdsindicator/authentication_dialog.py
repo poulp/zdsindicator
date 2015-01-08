@@ -55,7 +55,6 @@ class AuthenticationtDialog(object):
                 self.entry_password.get_text())
 
             if response:
-                self.indicator.set_menu_username(self.entry_username.get_text())
                 self.dialog.destroy()
                 UpdateThread(self.indicator).start()
                 self.indicator.set_loop_update()
