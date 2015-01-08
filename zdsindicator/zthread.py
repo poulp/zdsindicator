@@ -2,7 +2,7 @@
 # -*- coding: utf8 -*-
 
 import threading
-import gobject
+from gi.repository import GObject
 import requests
 from lxml import html
 
@@ -17,13 +17,13 @@ class UpdateThread(threading.Thread):
         self.indicator = indicator
 
     def run(self):
-        gobject.idle_add(self.indicator.show_menu_item_normal)
-        gobject.idle_add(self.indicator.set_icon_app, "parsing")
+        GObject.idle_add(self.indicator.show_menu_item_normal)
+        GObject.idle_add(self.indicator.set_icon_app, "parsing")
 
         try:
             html_output = get_home_page(self.indicator.client, self.indicator.URL)
         except requests.exceptions.RequestException:
-            gobject.idle_add(self.indicator.show_menu_item_error_server, "Problème de connexion serveur")
+            GObject.idle_add(self.indicator.show_menu_item_error_server, "Problème de connexion serveur")
             return
 
         root = html.fromstring(html_output)
@@ -34,12 +34,12 @@ class UpdateThread(threading.Thread):
                 list_mp = get_mp(root)
                 list_notif = get_notifications_forum(root)
             except requests.exceptions.RequestException:
-                gobject.idle_add(self.indicator.show_menu_item_error_server, "Problème de connexion serveur")
+                GObject.idle_add(self.indicator.show_menu_item_error_server, "Problème de connexion serveur")
                 return
 
-            gobject.idle_add(self.indicator.set_mp, list_mp)
-            gobject.idle_add(self.indicator.set_notifications_forums, list_notif)
-            gobject.idle_add(self.indicator.set_icon_app, "icon")
+            GObject.idle_add(self.indicator.set_mp, list_mp)
+            GObject.idle_add(self.indicator.set_notifications_forums, list_notif)
+            GObject.idle_add(self.indicator.set_icon_app, "icon")
 
             if self.indicator.activate_notifications:
                 send_notif(len(list_mp), len(list_notif), self.indicator.icon_path)
@@ -50,7 +50,7 @@ class UpdateThread(threading.Thread):
                     try:
                         html_output = get_home_page(self.indicator.client, self.indicator.URL)
                     except requests.exceptions.RequestException:
-                        gobject.idle_add(self.indicator.show_menu_item_error_server, "Problème de connexion serveur")
+                        GObject.idle_add(self.indicator.show_menu_item_error_server, "Problème de connexion serveur")
                         return
 
                     root = html.fromstring(html_output)
@@ -59,21 +59,21 @@ class UpdateThread(threading.Thread):
                         list_mp = get_mp(root)
                         list_notif = get_notifications_forum(root)
                     except requests.exceptions.RequestException:
-                        gobject.idle_add(self.indicator.show_menu_item_error_server, "Problème de connexion serveur")
+                        GObject.idle_add(self.indicator.show_menu_item_error_server, "Problème de connexion serveur")
                         return
 
-                    gobject.idle_add(self.indicator.set_mp, list_mp)
-                    gobject.idle_add(self.indicator.set_notifications_forums, list_notif)
-                    gobject.idle_add(self.indicator.set_icon_app, "icon")
+                    GObject.idle_add(self.indicator.set_mp, list_mp)
+                    GObject.idle_add(self.indicator.set_notifications_forums, list_notif)
+                    GObject.idle_add(self.indicator.set_icon_app, "icon")
 
                     if self.indicator.activate_notifications:
                         send_notif(len(list_mp), len(list_notif), self.indicator.icon_path)
 
                 else:
-                    gobject.idle_add(self.indicator.show_menu_item_error_server, "Vous n'êtes pas authentifié", True)
-                    gobject.idle_add(self.indicator.set_icon_app, "logout")
-                    gobject.source_remove(self.indicator.timeout_id)
+                    GObject.idle_add(self.indicator.show_menu_item_error_server, "Vous n'êtes pas authentifié", True)
+                    GObject.idle_add(self.indicator.set_icon_app, "logout")
+                    GObject.source_remove(self.indicator.timeout_id)
 
             except requests.exceptions.RequestException:
-                gobject.idle_add(self.indicator.show_menu_item_error_server, "Problème de connexion serveur")
+                GObject.idle_add(self.indicator.show_menu_item_error_server, "Problème de connexion serveur")
                 return

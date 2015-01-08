@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 
-import gtk
 import os
-import gobject
 import glib
+
+from gi.repository import Gtk, GObject
 
 
 class ConfigureDialog(object):
@@ -12,8 +12,8 @@ class ConfigureDialog(object):
 
         self.indicator = indicator
 
-        self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
-        self.window.set_position(gtk.WIN_POS_CENTER)
+        self.window = Gtk.Window(Gtk.WindowType.TOPLEVEL)
+        self.window.set_position(Gtk.WindowPosition.CENTER)
         self.window.set_resizable(False)
         self.window.set_title('Paramètres')
         self.window.connect('delete_event', self.cancel_dialog)
@@ -21,70 +21,65 @@ class ConfigureDialog(object):
         self.window.set_border_width(10)
         self.window.set_icon_from_file(self.indicator.icon_path+"/zdsindicator-icon.png")
 
-        #pour afficher les icones sur les boutons
-        gtk.settings_get_default().props.gtk_button_images = True
-
-        vbox_window = gtk.VBox(True, 2)
+        vbox_window = Gtk.VBox(True, 2)
         self.window.add(vbox_window)
         vbox_window.show()
 
-        hbox_refresh_scale = gtk.VBox(False, 0)
+        hbox_refresh_scale = Gtk.VBox(False, 0)
         vbox_window.pack_start(hbox_refresh_scale, False, True, 0)
         hbox_refresh_scale.show()
 
-        self.label_refresh_scale = gtk.Label("Rafraichir toutes les 10 minutes")
+        self.label_refresh_scale = Gtk.Label("Rafraichir toutes les 10 minutes")
         hbox_refresh_scale.pack_start(self.label_refresh_scale, False, False, 0)
         self.label_refresh_scale.show()
 
-        button_refresh_scale = gtk.Adjustment(int(self.indicator.refresh_time / 60000), 1.0, 90.0, 1.0, 10.0, 0.0)
+        button_refresh_scale = Gtk.Adjustment(int(self.indicator.refresh_time / 60000), 1.0, 90.0, 1.0, 10.0, 0.0)
         button_refresh_scale.connect('value_changed', self.set_refresh_scale_label)
-        self.scaletimer = gtk.HScale(button_refresh_scale)
+        self.scaletimer = Gtk.HScale()
+        self.scaletimer.set_adjustment(button_refresh_scale)
         self.scaletimer.set_draw_value(False)
         self.scaletimer.set_digits(0)
         hbox_refresh_scale.pack_start(self.scaletimer, True, True, 0)
         self.set_refresh_scale_label(self.scaletimer)
         self.scaletimer.show()
 
-        vbox_check = gtk.VBox(True, 2)
+        vbox_check = Gtk.VBox(True, 2)
         vbox_window.pack_start(vbox_check, True, True, 2)
         vbox_check.show()
 
-        self.activate_notifications_check = gtk.CheckButton("Afficher les notifications")
+        self.activate_notifications_check = Gtk.CheckButton("Afficher les notifications")
         vbox_check.pack_start(self.activate_notifications_check, True, True, 2)
         self.activate_notifications_check.show()
         self.activate_notifications_check.set_active(self.indicator.activate_notifications)
 
-        self.activate_autostart = gtk.CheckButton("Lancer au démarrage")
+        self.activate_autostart = Gtk.CheckButton("Lancer au démarrage")
         vbox_check.pack_start(self.activate_autostart, True, True, 2)
         self.activate_autostart.show()
         self.activate_autostart.set_active(self.indicator.autostart)
 
-        hbox_compte = gtk.HBox(True, 2)
+        hbox_compte = Gtk.HBox(True, 2)
         hbox_compte.show()
         vbox_window.pack_start(hbox_compte, True, False, 0)
 
-        label_username_compte = gtk.Label("Aucun compte zds enregistré")
+        label_username_compte = Gtk.Label("Aucun compte zds enregistré")
         label_username_compte.show()
         hbox_compte.pack_start(label_username_compte, True, True, 2)
 
-        button_compte = gtk.Button("")
-        image = gtk.Image()
-        image.set_from_stock(gtk.STOCK_ADD, gtk.ICON_SIZE_BUTTON)
-        button_compte.set_image(image)
+        button_compte = Gtk.Button("+")
         button_compte.show()
         button_compte.connect('clicked', self.cancel_dialog)
         hbox_compte.pack_start(button_compte, False, False, 2)
 
-        hbox_button = gtk.HBox(True, 2)
+        hbox_button = Gtk.HBox(True, 2)
         hbox_button.show()
         vbox_window.pack_start(hbox_button, False, False, 0)
 
-        button_cancel = gtk.Button("Annuler")
+        button_cancel = Gtk.Button("Annuler")
         button_cancel.show()
         button_cancel.connect('clicked', self.cancel_dialog)
         hbox_button.pack_start(button_cancel, False, True, 2)
 
-        button_save = gtk.Button("Sauver")
+        button_save = Gtk.Button("Sauver")
         button_save.show()
         button_save.connect('clicked', self.save, None)
         hbox_button.pack_start(button_save, False, True, 2)
@@ -96,7 +91,7 @@ class ConfigureDialog(object):
         self.window.hide()
 
     def keypress(self, widget, data):
-        if data.keyval == gtk.keysyms.Escape:
+        if data.keyval == Gtk.keysyms.Escape:
             self.window.hide()
 
     def set_refresh_scale_label(self, widget):
@@ -142,5 +137,5 @@ class ConfigureDialog(object):
 
         self.window.hide()
 
-        gobject.source_remove(self.indicator.timeout_id)
+        GObject.source_remove(self.indicator.timeout_id)
         self.indicator.set_loop_update()

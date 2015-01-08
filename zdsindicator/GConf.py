@@ -3,8 +3,7 @@
 
 # original code : https://github.com/nicolas-raoul/Feedindicator
 
-import gconf
-from gconf import VALUE_BOOL, VALUE_INT, VALUE_STRING, VALUE_FLOAT
+from gi.repository.GConf import Client, ValueType
 from types import BooleanType, StringType, IntType, FloatType
 
 
@@ -12,7 +11,7 @@ class GConf:
     def __init__(self, appname, allowed={}):
         self._domain = '/apps/%s/' % appname
         self._allowed = allowed
-        self._gconf_client = gconf.client_get_default()
+        self._gconf_client = Client.get_default()
 
     def __getitem__(self, attr):
         return self.get_value(attr)
@@ -58,13 +57,13 @@ class GConf:
         value = self._gconf_client.get(self._domain + key)
         if value is not None:
             valuetype = value.type
-            if valuetype == VALUE_BOOL:
+            if valuetype == ValueType.BOOL:
                 return value.get_bool()
-            elif valuetype == VALUE_INT:
+            elif valuetype == ValueType.INT:
                 return value.get_int()
-            elif valuetype == VALUE_STRING:
+            elif valuetype == ValueType.STRING:
                 return value.get_string()
-            elif valuetype == VALUE_FLOAT:
+            elif valuetype == ValueType.FLOAT:
                 return value.get_float()
             else:
                 return None

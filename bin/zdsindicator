@@ -1,16 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 
-import gobject
 import gc
-import gtk
+from gi.repository import Gtk, GObject
 
 from zdsindicator.zindicator import ZIndicator
 
 if __name__ == "__main__":
-    gobject.threads_init()
+    GObject.threads_init()
     if not gc.isenabled():
         gc.enable()
     z = ZIndicator()
     z.update()
-    gtk.main()
+    Gtk.main()

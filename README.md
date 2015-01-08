@@ -15,8 +15,7 @@ Screenshot
 
 Requis
 ------
- * python-appindicator
- * python-gtk
+ * gir1.2-gconf-2.0
  * lxml
  * requests
 

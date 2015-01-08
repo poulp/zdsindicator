@@ -4,10 +4,9 @@
 import requests
 import os
 import webbrowser
-import pynotify
-import appindicator
-import gtk
-import gobject
+
+from gi.repository import AppIndicator3 as AppIndicator
+from gi.repository import Gtk, GObject, Notify
 
 from GConf import GConf
 from authentication_dialog import AuthenticationtDialog
@@ -40,8 +39,8 @@ class ZIndicator(object):
         self.username = ""
 
         # indicator options
-        self.ind = appindicator.Indicator(self.app_name, 'zdsindicator', appindicator.CATEGORY_APPLICATION_STATUS)
-        self.ind.set_status(appindicator.STATUS_ACTIVE)
+        self.ind = AppIndicator.Indicator.new(self.app_name, 'zdsindicator', AppIndicator.IndicatorCategory.APPLICATION_STATUS)
+        self.ind.set_status(AppIndicator.IndicatorStatus.ACTIVE)
         self.ind.set_attention_icon("indicator-messages-new")
         self.ind.set_icon_theme_path(self.icon_path)
         self.ind.set_icon("zdsindicator-icon")
@@ -56,44 +55,44 @@ class ZIndicator(object):
         if self.gconf['autostart'] is not None:
             self.autostart = self.gconf['autostart']
 
-        self.menu = gtk.Menu()
+        self.menu = Gtk.Menu()
 
-        self.menu_mp = gtk.MenuItem('Messages Privés')
+        self.menu_mp = Gtk.MenuItem('Messages Privés')
         self.menu_mp.show()
         self.menu.append(self.menu_mp)
 
-        self.menu_notif = gtk.MenuItem('Notifications')
+        self.menu_notif = Gtk.MenuItem('Notifications')
         self.menu_notif.show()
         self.menu.append(self.menu_notif)
 
-        self.menu_serveur_error = gtk.MenuItem('Problème de connexion au serveur')
+        self.menu_serveur_error = Gtk.MenuItem('Problème de connexion au serveur')
         self.menu_serveur_error.set_sensitive(False)
         self.menu.append(self.menu_serveur_error)
 
-        self.menu_auth = gtk.MenuItem('Connexion')
+        self.menu_auth = Gtk.MenuItem('Connexion')
         self.menu_auth.hide()
         self.menu_auth.connect('activate', AuthenticationtDialog, self)
         self.menu.append(self.menu_auth)
 
-        separator = gtk.SeparatorMenuItem()
+        separator = Gtk.SeparatorMenuItem()
         separator.show()
         self.menu.append(separator)
 
-        self.menu_username = gtk.MenuItem('username')
+        self.menu_username = Gtk.MenuItem('username')
         self.menu_username.hide()
         self.menu.append(self.menu_username)
 
-        menu_refresh = gtk.MenuItem('Rafraichir')
+        menu_refresh = Gtk.MenuItem('Rafraichir')
         menu_refresh.show()
         menu_refresh.connect('activate', self.update)
         self.menu.append(menu_refresh)
 
-        menu_configure = gtk.MenuItem('Paramètres')
+        menu_configure = Gtk.MenuItem('Paramètres')
         menu_configure.show()
         menu_configure.connect('activate', ConfigureDialog, self)
         self.menu.append(menu_configure)
 
-        menu_quit = gtk.ImageMenuItem(gtk.STOCK_QUIT)
+        menu_quit = Gtk.MenuItem('Quitter')
         menu_quit.connect("activate", self.quit)
         menu_quit.show()
         self.menu.append(menu_quit)
@@ -101,17 +100,17 @@ class ZIndicator(object):
         self.menu.show()
         self.ind.set_menu(self.menu)
 
-        pynotify.init('ZDSNotification')
+        Notify.init('ZDSNotification')
         self.set_loop_update()
 
     def quit(self, widget, data=None):
-        gtk.main_quit()
+        Gtk.main_quit()
 
     def menuitem_response_website(self, data, url):
         webbrowser.open(url)
 
     def set_loop_update(self):
-        self.timeout_id = gobject.timeout_add(self.refresh_time, self.update)
+        self.timeout_id = GObject.timeout_add(self.refresh_time, self.update)
 
     def update(self, widget=None):
         UpdateThread(self).start()
@@ -120,13 +119,13 @@ class ZIndicator(object):
     def set_mp(self, list_mp):
         self.menu_mp.set_label("Message Privés (" + str(len(list_mp)) + ")")
 
-        submenu = gtk.Menu()
+        submenu = Gtk.Menu()
 
         for mp in list_mp:
             if mp.date[0] == "I":
-                item = gtk.MenuItem("[" + mp.topic + "] par " + mp.username + " " + mp.date)
+                item = Gtk.MenuItem("[" + mp.topic + "] par " + mp.username + " " + mp.date)
             else:
-                item = gtk.MenuItem("[" + mp.topic + "] par " + mp.username + " le " + mp.date)
+                item = Gtk.MenuItem("[" + mp.topic + "] par " + mp.username + " le " + mp.date)
 
             item.connect('activate', self.menuitem_response_website, self.URL + mp.href)
 
@@ -138,13 +137,13 @@ class ZIndicator(object):
     def set_notifications_forums(self, list_notif):
         self.menu_notif.set_label("Notifications (" + str(len(list_notif)) + ")")
 
-        submenu = gtk.Menu()
+        submenu = Gtk.Menu()
 
         for notif in list_notif:
             if notif.date[0] == "I":
-                item = gtk.MenuItem("[" + notif.topic + "] par " + notif.username + " " + notif.date)
+                item = Gtk.MenuItem("[" + notif.topic + "] par " + notif.username + " " + notif.date)
             else:
-                item = gtk.MenuItem("[" + notif.topic + "] par " + notif.username + " le " + notif.date)
+                item = Gtk.MenuItem("[" + notif.topic + "] par " + notif.username + " le " + notif.date)
 
             item.connect('activate', self.menuitem_response_website, self.URL + notif.href)
 
