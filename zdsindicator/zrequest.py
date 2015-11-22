@@ -21,6 +21,9 @@ def auth(client, base_url, username, password):
         'csrfmiddlewaretoken': csrftoken
     }
 
+    # si https
+    client.headers.update({'Referer': base_url+'/membres/connexion/'})
+
     # requète d'authentification
     try:
         s = client.post(base_url+'/membres/connexion/', data=params)

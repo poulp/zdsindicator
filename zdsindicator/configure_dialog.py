@@ -55,18 +55,18 @@ class ConfigureDialog(object):
         self.activate_autostart.show()
         self.activate_autostart.set_active(self.indicator.autostart)
 
-        hbox_compte = Gtk.HBox(True, 2)
-        hbox_compte.show()
-        vbox_window.pack_start(hbox_compte, True, False, 0)
+        # hbox_compte = Gtk.HBox(True, 2)
+        # hbox_compte.show()
+        # vbox_window.pack_start(hbox_compte, True, False, 0)
+        #
+        # label_username_compte = Gtk.Label("Aucun compte zds enregistré")
+        # label_username_compte.show()
+        # hbox_compte.pack_start(label_username_compte, True, True, 2)
 
-        label_username_compte = Gtk.Label("Aucun compte zds enregistré")
-        label_username_compte.show()
-        hbox_compte.pack_start(label_username_compte, True, True, 2)
-
-        button_compte = Gtk.Button("+")
-        button_compte.show()
-        button_compte.connect('clicked', self.cancel_dialog)
-        hbox_compte.pack_start(button_compte, False, False, 2)
+        # button_compte = Gtk.Button("+")
+        # button_compte.show()
+        # button_compte.connect('clicked', self.cancel_dialog)
+        # hbox_compte.pack_start(button_compte, False, False, 2)
 
         hbox_button = Gtk.HBox(True, 2)
         hbox_button.show()
