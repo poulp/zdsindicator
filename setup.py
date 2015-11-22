@@ -22,7 +22,7 @@ test_requirements = [
 
 setup(
     name='zdsindicator',
-    version='0.0.3',
+    version='0.0.4',
     description='Un applet ubuntu pour le site Zeste de Savoir',
     long_description=readme + '\n\n' + history,
     author='poulp',
