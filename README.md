@@ -18,6 +18,7 @@ Requis
  * gtk3
  * gir1.2-gconf-2.0
  * lxml
+ * python-appindicator
  * requests
 
 Installation
